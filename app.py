@@ -22,6 +22,21 @@ moods_synonyms = {
 }
 '''
 
+def scrape_book_info():
+    Book_Title = page.inner_text("h2")
+    print(Book_Title)
+    Book_Rating = page.inner_text("/html/body/div/main/div/div[2]/div[2]/span/div")
+    print(Book_Rating)
+    
+def parse_books():
+    #Add If/Then: If book is already in Recommended Books list. If it is go to "Next Book" If it's not, scrape book info.
+    page.get_by_text("Next Book").scroll_into_view_if_needed()
+    timeout=100
+    page.click(f"text={'Next Book'}")
+    scrape_book_info()
+
+
+User_Mood = "Happy".lower()
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
@@ -29,12 +44,14 @@ with sync_playwright() as p:
     page.goto("https://booksbymood.com/")
     page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")
     timeout=5000
-    User_Mood = "Happy".lower()
     page.click(f"text={User_Mood}")
+    parse_books()
     page.pause()
-    browser.close()
 
-    
+
+
+
+
 
 
 
