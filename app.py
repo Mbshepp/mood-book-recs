@@ -1,6 +1,13 @@
+import heapq
+
 from flask import Flask
 from PIL import Image
 from playwright.sync_api import sync_playwright
+import requests
+from bs4 import BeautifulSoup
+from tenacity import before_log
+from fraction import Fraction
+from heapq import nlargest
 
 '''
 moods_synonyms = {
@@ -22,18 +29,40 @@ moods_synonyms = {
 }
 '''
 
+titles_and_ratings_list = []
+recommended_books_list = []
+
+
 def scrape_book_info():
-    Book_Title = page.inner_text("h2")
-    print(Book_Title)
-    Book_Rating = page.inner_text("/html/body/div/main/div/div[2]/div[2]/span/div")
-    print(Book_Rating)
-    
-def parse_books():
-    #Add If/Then: If book is already in Recommended Books list. If it is go to "Next Book" If it's not, scrape book info.
-    page.get_by_text("Next Book").scroll_into_view_if_needed()
-    timeout=100
-    page.click(f"text={'Next Book'}")
-    scrape_book_info()
+    while len(titles_and_ratings_list) < 5:
+        book_title = page.inner_text("h2")
+        if book_title in recommended_books_list:
+            page.get_by_text("Next Book").scroll_into_view_if_needed()
+            page.click(f"text={'Next Book'}")
+        else:
+            rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
+            book_rating = page.inner_text(rating_selector)
+            rating_as_fraction = (Fraction(book_rating))
+            title_rating_dict = {book_title: rating_as_fraction}
+            titles_and_ratings_list.append(title_rating_dict)
+            page.get_by_text("Next Book").scroll_into_view_if_needed()
+            page.click(f"text={'Next Book'}")
+
+
+    print(titles_and_ratings_list)
+    titles_and_ratings_list.clear()
+    print(titles_and_ratings_list)
+
+
+def keep_top_three_books():
+    top_three_books = heapq.nlargest(3,titles_and_ratings_list, key=titles_and_ratings_list)
+
+    print(top_three_books)
+
+
+
+
+
 
 
 User_Mood = "Happy".lower()
@@ -45,9 +74,10 @@ with sync_playwright() as p:
     page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")
     timeout=5000
     page.click(f"text={User_Mood}")
-    parse_books()
-    page.pause()
+    scrape_book_info()
+    keep_top_three_books()
 
+    #page.pause()
 
 
 
