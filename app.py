@@ -1,13 +1,16 @@
 import heapq
-
 from flask import Flask
 from PIL import Image
 from playwright.sync_api import sync_playwright
 import requests
 from bs4 import BeautifulSoup
+from sqlalchemy.util import counter
 from tenacity import before_log
 from fraction import Fraction
 from heapq import nlargest
+from collections import Counter
+
+
 
 '''
 moods_synonyms = {
@@ -41,28 +44,29 @@ def scrape_book_info():
             page.click(f"text={'Next Book'}")
         else:
             rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
-            book_rating = page.inner_text(rating_selector)
-            rating_as_fraction = (Fraction(book_rating))
-            title_rating_dict = {book_title: rating_as_fraction}
+            book_rating = (page.inner_text(rating_selector))
+            #print(book_rating)
+            a, b = book_rating.split("/")
+            float_book_rating = float(a) / float(b)
+            title_rating_dict = {book_title: float_book_rating}
+            #title_rating_dict = {book_title: book_rating}
+            #rating_as_fraction = Fraction(book_rating)
             titles_and_ratings_list.append(title_rating_dict)
+            #print(title_rating_dict)
             page.get_by_text("Next Book").scroll_into_view_if_needed()
             page.click(f"text={'Next Book'}")
 
 
     print(titles_and_ratings_list)
-    titles_and_ratings_list.clear()
-    print(titles_and_ratings_list)
+    #titles_and_ratings_list.clear()
+    #print(titles_and_ratings_list)
 
 
-def keep_top_three_books():
-    top_three_books = heapq.nlargest(3,titles_and_ratings_list, key=titles_and_ratings_list)
-
-    print(top_three_books)
-
-
-
-
-
+def three_highest_values():
+    count_dict = Counter(titles_and_ratings_list)
+    three_highest = count_dict.most_common(3)
+    for i in three_highest:
+        print(i[0],":",i[1]," ")
 
 
 User_Mood = "Happy".lower()
@@ -75,8 +79,7 @@ with sync_playwright() as p:
     timeout=5000
     page.click(f"text={User_Mood}")
     scrape_book_info()
-    keep_top_three_books()
-
+    three_highest_values()
     #page.pause()
 
 
