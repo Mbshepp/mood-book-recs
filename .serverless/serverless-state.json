@@ -1,0 +1,189 @@
+{
+  "service": {
+    "service": "lambda-sorter",
+    "serviceObject": {
+      "name": "lambda-sorter"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "python3.13",
+      "region": "us-east-1",
+      "stage": "dev",
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "SorterLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/lambda-sorter-dev-sorter"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "lambda-sorter",
+                        "dev",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/lambda-sorter-dev*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/lambda-sorter-dev*:*:*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "lambda-sorter",
+                    "dev",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "SorterLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-us-east-1-f125a8bb-1fc5",
+                "S3Key": "serverless/lambda-sorter/dev/1748354744445-2025-05-27T14:05:44.445Z/lambda-sorter.zip"
+              },
+              "Handler": "mood-book-recs.three_highest_ratings",
+              "Runtime": "python3.13",
+              "FunctionName": "lambda-sorter-dev-sorter",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SorterLogGroup"
+            ]
+          },
+          "SorterLambdaVersionOsyxHe4ES08xbAtgPBnZ3eolhuznF2ukNuiXenU": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SorterLambdaFunction"
+              },
+              "CodeSha256": "YCdD6yG4OnHfhUniTS6Xu7ej4LqpWWhW79MycDT5JNQ="
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-us-east-1-f125a8bb-1fc5",
+            "Export": {
+              "Name": "sls-lambda-sorter-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "SorterLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SorterLambdaVersionOsyxHe4ES08xbAtgPBnZ3eolhuznF2ukNuiXenU"
+            },
+            "Export": {
+              "Name": "sls-lambda-sorter-dev-SorterLambdaFunctionQualifiedArn"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "pluginsData": {},
+    "functions": {
+      "sorter": {
+        "handler": "mood-book-recs.three_highest_ratings",
+        "events": [],
+        "name": "lambda-sorter-dev-sorter",
+        "package": {},
+        "memory": 1024,
+        "timeout": 6,
+        "runtime": "python3.13",
+        "vpc": {},
+        "versionLogicalId": "SorterLambdaVersionOsyxHe4ES08xbAtgPBnZ3eolhuznF2ukNuiXenU"
+      }
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless",
+    "initialServerlessConfig": {
+      "service": "lambda-sorter",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      }
+    },
+    "appId": null,
+    "orgId": null,
+    "layers": {},
+    "artifact": "C:\\Users\\mitsu\\mood-book-recs\\.serverless\\lambda-sorter.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/lambda-sorter/dev/1748354744445-2025-05-27T14:05:44.445Z",
+    "artifact": "lambda-sorter.zip"
+  }
+}

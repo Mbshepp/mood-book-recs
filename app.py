@@ -1,14 +1,17 @@
 import heapq
+import requests
+import operator
 from flask import Flask
 from PIL import Image
 from playwright.sync_api import sync_playwright
-import requests
 from bs4 import BeautifulSoup
 from sqlalchemy.util import counter
 from tenacity import before_log
 from fraction import Fraction
 from heapq import nlargest
-from collections import Counter
+from collections import OrderedDict
+import numpy as np
+from operator import itemgetter
 
 
 
@@ -34,9 +37,11 @@ moods_synonyms = {
 
 titles_and_ratings_list = []
 recommended_books_list = []
-
+title_rating_dict ={}
+book_title = None
 
 def scrape_book_info():
+    global title_rating_dict, book_title
     while len(titles_and_ratings_list) < 5:
         book_title = page.inner_text("h2")
         if book_title in recommended_books_list:
@@ -45,28 +50,23 @@ def scrape_book_info():
         else:
             rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
             book_rating = (page.inner_text(rating_selector))
-            #print(book_rating)
             a, b = book_rating.split("/")
             float_book_rating = float(a) / float(b)
             title_rating_dict = {book_title: float_book_rating}
-            #title_rating_dict = {book_title: book_rating}
-            #rating_as_fraction = Fraction(book_rating)
             titles_and_ratings_list.append(title_rating_dict)
-            #print(title_rating_dict)
             page.get_by_text("Next Book").scroll_into_view_if_needed()
             page.click(f"text={'Next Book'}")
-
-
-    print(titles_and_ratings_list)
     #titles_and_ratings_list.clear()
-    #print(titles_and_ratings_list)
+
+    return title_rating_dict
 
 
-def three_highest_values():
-    count_dict = Counter(titles_and_ratings_list)
-    three_highest = count_dict.most_common(3)
-    for i in three_highest:
-        print(i[0],":",i[1]," ")
+def three_highest_ratings():
+    sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: list(x.values())[0], reverse=True)
+    print('SORTED HIGH TO LOW')
+    print(sorted_high_low)
+
+
 
 
 User_Mood = "Happy".lower()
@@ -79,7 +79,7 @@ with sync_playwright() as p:
     timeout=5000
     page.click(f"text={User_Mood}")
     scrape_book_info()
-    three_highest_values()
+    three_highest_ratings()
     #page.pause()
 
 
