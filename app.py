@@ -95,13 +95,28 @@ def three_highest_ratings():
 
 
 def scrape_top_three_books_full_info():
-    for book in top_three_rated:
         open_webpage_choose_mood()
-        author_selector = 'span.text-gray-500 drop-shadow-md\\"["Gretchen Rubin"]'
-        author = (page.inner_text(author_selector))
-        print("AUTHOR SELECTOR AND AUTHOR")
-        print(author_selector)
-        print(author)
+        #author_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
+        page.wait_for_selector("span.text-gray-500.drop-shadow-md")
+        timeout=3000
+        author_selector = page.inner_text("span.text-gray-500.drop-shadow-md")
+        book_summary = page.inner_text("div.pt-2.leading-relaxed.drop-shadow-md")
+        page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
+        #purchase_link = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
+        purchase_link_locator = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg").get_attribute('href')
+
+
+
+
+
+        page.get_by_text("Next Book").scroll_into_view_if_needed()
+        page.click(f"text={'Next Book'}")
+        print("Author Name: " + author_selector)
+        print("Book Summary: " + book_summary)
+        print("Purchase Link: ")
+        print(purchase_link_locator)
+
+
 
 '''book_title_and_key_not_equal = book_title != list(titles_and_ratings_list)[0]
        if book_title_and_key_not_equal:
