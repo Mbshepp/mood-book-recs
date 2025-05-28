@@ -12,6 +12,7 @@ from heapq import nlargest
 from collections import OrderedDict
 import numpy as np
 from operator import itemgetter
+from urllib.request import urlretrieve
 
 
 
@@ -104,18 +105,47 @@ def scrape_top_three_books_full_info():
         page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
         #purchase_link = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
         purchase_link_locator = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg").get_attribute('href')
-
-
-
-
-
-        page.get_by_text("Next Book").scroll_into_view_if_needed()
-        page.click(f"text={'Next Book'}")
-        print("Author Name: " + author_selector)
-        print("Book Summary: " + book_summary)
         print("Purchase Link: ")
         print(purchase_link_locator)
+        page.get_by_text("Next Book").scroll_into_view_if_needed()
+        page.click(f"text={'Next Book'}")
 
+        current_url = page.url
+        response = requests.get(current_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        img_tags = soup.find_all('img')
+        print("ALL IMAGE TAGS")
+        print(img_tags)
+        for img in img_tags:
+            img_url = img.get('src')
+            if img_url:
+                img_name = img_tags[1]
+                '''img_name = img_url.split('/')[-1]
+                urlretrieve(img_url, img_name)'''
+                print("IMAGE NAME")
+                print(img_name)
+
+
+
+
+
+        #soup = BeautifulSoup(source_code, "html.parser")
+        #book_cover = soup.img
+        #book_cover_elements = soup("img",class_="rounded-xl shadow-xl")
+
+
+
+
+        print("Author Name: " + author_selector)
+        print("Book Summary: " + book_summary)
+
+        #print(current_url)
+        #print("Book Cover Elements: ")
+        #print(book_cover)
+        #print(source_code)
+        #print("image source")
+        #print(image_locator)
 
 
 '''book_title_and_key_not_equal = book_title != list(titles_and_ratings_list)[0]
