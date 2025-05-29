@@ -1,11 +1,14 @@
 import heapq
 import requests
 import operator
+import re
+import base64
 from flask import Flask
 from PIL import Image
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 from sqlalchemy.util import counter
+from starlette_admin import HasOne
 from tenacity import before_log
 from fraction import Fraction
 from heapq import nlargest
@@ -68,29 +71,21 @@ def scrape_book_info():
             float_book_rating = float(a) / float(b)
             #title_rating_dict = {book_title: float_book_rating}
             title_rating_list= [book_title, float_book_rating]
-            print("test: title_rating_list")
-            print(title_rating_list)
             #titles_and_ratings_list.append(title_rating_dict)
             titles_and_ratings_list.append(title_rating_list)
-            print("test: titles and ratings list")
-            print(titles_and_ratings_list)
             page.get_by_text("Next Book").scroll_into_view_if_needed()
             page.click(f"text={'Next Book'}")
 
     #return title_rating_dict
     return title_rating_list
 
+
 def three_highest_ratings():
     global top_three_rated
     top_three_rated = []
     #sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: list(x.values())[0], reverse=True)
     sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: x[1], reverse=True)
-    print("test: sorted_high_low")
-    print(sorted_high_low)
     top_three_rated = sorted_high_low[:3]
-    print("test: top three rated")
-    print(top_three_rated)
-
 
     return top_three_rated
 
@@ -109,36 +104,48 @@ def scrape_top_three_books_full_info():
         print(purchase_link_locator)
         page.get_by_text("Next Book").scroll_into_view_if_needed()
         page.click(f"text={'Next Book'}")
-
-        current_url = page.url
-        response = requests.get(current_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        img_tags = soup.find_all('img')
-        print("ALL IMAGE TAGS")
-        print(img_tags)
-        for img in img_tags:
-            img_url = img.get('src')
-            if img_url:
-                img_name = img_tags[1]
-                '''img_name = img_url.split('/')[-1]
-                urlretrieve(img_url, img_name)'''
-                print("IMAGE NAME")
-                print(img_name)
-
-
-
-
-
-        #soup = BeautifulSoup(source_code, "html.parser")
-        #book_cover = soup.img
-        #book_cover_elements = soup("img",class_="rounded-xl shadow-xl")
-
-
-
-
         print("Author Name: " + author_selector)
         print("Book Summary: " + book_summary)
+
+        return purchase_link_locator
+
+
+def get_real_amazon_url(purchase_link_locator):
+    try:
+        response = requests.get(purchase_link_locator, allow_redirects=True, timeout=5)
+        return response.url
+    except Exception as e:
+        print("Redirect failed", e)
+        return None
+
+def get_amazon_image_url(purchase_link_locator):
+    real_url = get_real_amazon_url(purchase_link_locator)
+    if real_url:
+        match = re.search(r'/dp/(\w+)', real_url)
+        if match:
+            amzn_link_tail = match.group(1)
+            return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"
+    return None
+
+
+
+
+
+        #current_url = page.url
+        #response = requests.get(current_url)
+        #soup = BeautifulSoup(response.text, 'html.parser')
+        #img_tags = soup.find_all('img')
+        #for img in img_tags:
+         #   img_url = img.get('src')
+          #  if img_url:
+           #     img_name = img_tags[1]
+            #    image_source = img_name['src']
+             #   print("Image Source")
+              #  print(image_source)'''
+
+
+
+
 
         #print(current_url)
         #print("Book Cover Elements: ")
@@ -163,6 +170,12 @@ with sync_playwright() as p:
     scrape_book_info()
     three_highest_ratings()
     scrape_top_three_books_full_info()
+    purchase_link_locator = scrape_top_three_books_full_info()
+    img_url = get_amazon_image_url(purchase_link_locator)
+    if img_url:
+        print(img_url)
+    else:
+        print("No Image Found")
     #page.pause()
 
 
