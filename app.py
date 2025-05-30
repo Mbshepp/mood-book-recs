@@ -17,7 +17,6 @@ import numpy as np
 from operator import itemgetter
 from urllib.request import urlretrieve
 
-
 '''
 moods_synonyms = {
     'Happy': ['happy','cheerful','elated'],
@@ -44,6 +43,9 @@ reading_list = []
 #title_rating_dict ={}
 title_rating_list = []
 book_title = None
+recommended_book_headings = []
+reading_list_headings = []
+
 
 
 def open_webpage_choose_mood():
@@ -76,13 +78,8 @@ def scrape_book_info():
             get_real_amazon_url(purchase_link_locator)
             get_amazon_image_url(purchase_link_locator)
             img_url = get_amazon_image_url(purchase_link_locator)
-            '''if img_url:
-                print(img_url)
-            else:
-                print("No Image Found")'''
+
             title_rating_list = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]
-            print("FULL LIST ITEM")
-            print(title_rating_list)
             titles_and_ratings_list.append(title_rating_list)
             page.get_by_text("Next Book").scroll_into_view_if_needed()
             page.click(f"text={'Next Book'}")
@@ -96,9 +93,90 @@ def three_highest_ratings():
     #sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: list(x.values())[0], reverse=True)
     sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: x[1], reverse=True)
     top_three_rated = sorted_high_low[:3]
-    print(top_three_rated)
 
     return top_three_rated
+
+
+def get_real_amazon_url(purchase_link_locator):
+    try:
+        response = requests.get(purchase_link_locator, allow_redirects=True, timeout=5)
+        return response.url
+    except Exception as e:
+        print("Redirect failed", e)
+        return None
+
+
+def get_amazon_image_url(purchase_link_locator):
+    real_url = get_real_amazon_url(purchase_link_locator)
+    if real_url:
+        match = re.search(r'/dp/(\w+)', real_url)
+        if match:
+            amzn_link_tail = match.group(1)
+            return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"
+    return None
+
+
+def save_book_recommendations():
+    for book in top_three_rated:
+        add_to_recommended_books_list = recommended_books_list.append(book[:5])
+
+
+def present_books_to_user():
+    print("Here Are Your Happy Book Recommendations!")
+    for row in top_three_rated:
+        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N)")
+        if save_book.lower() == "yes":
+            add_to_reading_list = reading_list.append(row[:5])
+        elif save_book.lower() == "no":
+            print("Okay, I'll Just Add It To Your Recommended Books List")
+    print("READING LIST")
+    print(reading_list)
+    print("RECOMMENDED BOOKS LIST")
+    print(recommended_books_list)
+
+
+def view_reading_list():
+    open_reading_list = input("View Reading List?")
+    if open_reading_list.lower() == "Yes":
+        print(reading_list)
+    elif open_reading_list.lower() == "No":
+        print(' ')
+
+
+def view_recommended_list():
+    open_recommended_list = input("View Recommended List?")
+    if open_recommended_list.lower() == "Yes":
+        print(reading_list)
+    elif open_recommended_list.lower() == "No":
+        print(' ')
+
+
+
+user_mood = "Happy".lower()
+
+with sync_playwright() as p:
+    open_webpage_choose_mood()
+    scrape_book_info()
+    three_highest_ratings()
+    save_book_recommendations()
+    present_books_to_user()
+    #page.pause()
+
+
+
+'''for row in top_three_rated:
+        save_book = "Add " + row[0] + " To Your Reading List? (Y/N)"
+        win = tk.Toplevel()
+        win.geometry("180x100")
+        win.title('')
+        message = "Here Are Your Happy Book Recommendations! \n" + save_book
+        self.label(win, text=message).pack()
+        self.button(win, text='Yes')
+        self.button(win, text='No')
+        if button == 'Yes':
+            add_to_reading_list = reading_list.append(row[:5])
+        elif button == 'No':
+            print("Okay, I'll Just Add It To Your Recommended Books List")'''
 
 
 '''def scrape_top_three_books_full_info():
@@ -131,119 +209,6 @@ def three_highest_ratings():
 
 '''top_three_rated[i].append(book_summary)
         top_three_rated[i].append(purchase_link_locator)'''
-
-
-def get_real_amazon_url(purchase_link_locator):
-    try:
-        response = requests.get(purchase_link_locator, allow_redirects=True, timeout=5)
-        return response.url
-    except Exception as e:
-        print("Redirect failed", e)
-        return None
-
-
-def get_amazon_image_url(purchase_link_locator):
-    real_url = get_real_amazon_url(purchase_link_locator)
-    if real_url:
-        match = re.search(r'/dp/(\w+)', real_url)
-        if match:
-            amzn_link_tail = match.group(1)
-            return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"
-    return None
-
-def save_book_recommendations():
-    for book in top_three_rated:
-        add_to_recommended_books_list = book.append(recommended_books_list)
-
-def present_books_to_user():
-    print("Here Are Your Happy Book Recommendations!")
-    for i in top_three_rated:
-        save_book = input("Add " + book_title + " To Your Reading List? (Y/N)")
-        if save_book.lower() == "yes":
-            add_to_reading_list = i.append(reading_list)
-        elif save_book.lower() == "no":
-            print("Okay, I'll Just Add It To Your Recommended Books List")
-    print(reading_list)
-    print(recommended_books_list)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''def add_to_reading_lit():
-    for book in top_three_rated:
-        add_book = input("Add" + book_title + " to reading list?")'''
-
-
-recommended_book_headings = []
-reading_list_headings = []
-
-
-        #current_url = page.url
-        #response = requests.get(current_url)
-        #soup = BeautifulSoup(response.text, 'html.parser')
-        #img_tags = soup.find_all('img')
-        #for img in img_tags:
-         #   img_url = img.get('src')
-          #  if img_url:
-           #     img_name = img_tags[1]
-            #    image_source = img_name['src']
-             #   print("Image Source")
-              #  print(image_source)'''
-
-
-        #print(current_url)
-        #print("Book Cover Elements: ")
-        #print(book_cover)
-        #print(source_code)
-        #print("image source")
-        #print(image_locator)
-
-
-'''book_title_and_key_not_equal = book_title != list(titles_and_ratings_list)[0]
-       if book_title_and_key_not_equal:
-            page.get_by_text("Next Book").scroll_into_view_if_needed()
-            page.click(f"text={'Next Book'}")
-       else:'''
-
-
-user_mood = "Happy".lower()
-
-with sync_playwright() as p:
-    open_webpage_choose_mood()
-    scrape_book_info()
-    three_highest_ratings()
-    save_book_recommendations()
-    present_books_to_user()
-    #print(top_three_rated)
-    #scrape_top_three_books_full_info()
-    #purchase_link_locator = scrape_top_three_books_full_info()
-    '''img_url = get_amazon_image_url(purchase_link_locator)
-    if img_url:
-        print(img_url)
-    else:
-        print("No Image Found")'''
-
-
-
-    #page.pause()
-
-
-
-
-
-
 
 
 
