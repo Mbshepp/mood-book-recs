@@ -23,19 +23,14 @@ moods_synonyms = {
     'Sad': ['sad','melancholy','downcast'],
     'Enchanted': ['enchanted','captivated','wonderment'],
     'Inspired': ['inspired','stimulated','emboldened'],
-    'Motivated': ['motivated','driven','hopeful'],
     'Nostalgic': ['nostalgic','sentimental','wishful'],
-    'Curious': ['curious','inquisitive','questioning'],
-    'Grateful': ['grateful','thankful', 'appreciative'],
     'Lonely': ['lonely','isolated','forlorn'],
-    'Playful': ['playful','whimsical','goofy'],
     'Mad': ['mad','furious','irate'],
-    'Bored': ['bored','uninterested','disinterested'],
-    'Anxious': ['anxious','stressed','troubled'],
     'Humorous': ['humorous','amusing','witty'],
     'Serious': ['serious','solemn','earnest']
 }
 '''
+
 
 titles_and_ratings_list = []
 recommended_books_list = []
@@ -45,6 +40,58 @@ title_rating_list = []
 book_title = None
 recommended_book_headings = []
 reading_list_headings = []
+
+
+def mood_quiz():
+    quiz_questions = [
+        "What kind of moment sounds most appealing right now?", "You're walking and your playlist surprises you. What hits best today?",
+        "A friend says 'Tell me something real.' You say:", " Pick a setting that sounds closest to your current mood:",
+        "Right now, your thoughts feel:", "You open a book. The first line should make you feel:",
+        " How does your body feel today?", " Which scene could you step into right now?", "Someone asks how you're really doing. You say:"
+    ]
+
+    answers = [
+        ["A. Sitting in a sunny spot with something sweet to sip.", "B. Wandering through an old bookstore or antique shop","C. Getting lost in a quiet place with no phone service"],
+        ["A. Something dreamy and cinematic.", "B. Something that punches the air and moves fast", "C. Something with depth that makes you think"],
+        ["A. Honestly? I'm not sure how I'm doing.", "B. I feel like I'm waking up from something.", "C. Life's weird, but at least it's never boring."],
+        ["A. A rooftop at golden hour.", "B. A quiet kitchen at midnight.", "C. A mossy trail you haven't walked before."],
+        ["A. Sharp and pointed.", "B. Heavy but honest.", "C. Like a cloud you're trying to hold."],
+        ["A. Like you're about to remember something you forgot.", "B. Like anything is possible.", " C. Like you're about to laugh out loud."],
+        ["A. Light, like there's a skip in your step.", "B. Like you're moving through molasses.", "C. Like you're buzzing with ideas or restlessness."],
+        ["A. A candlelit room full of soft music.", "B. A city street, neon lights, people moving fast.", "C. A field of fireflies under a big sky."],
+        ["A. 'Honestly? I'm doing okay. Better than usual.", "B. 'It's been a lot lately, but I'm managing.", " C. 'I don't know... I just feel off."]
+]
+
+
+    for i, question in enumerate(quiz_questions):
+        print(question)
+        answer_row_index = answers[i]
+        user_input = input(
+            f" Choose: A, B, or C \n"
+            f"{answer_row_index[0]}\n"
+            f"{answer_row_index[1]}\n"
+            f"{answer_row_index[2]}")
+
+        collective_answers = []
+        user_answer = "q" + str(i+1) + user_input.lower()
+        collective_answers.append(user_answer)
+        print(collective_answers)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -155,6 +202,7 @@ def view_recommended_list():
 user_mood = "Happy".lower()
 
 with sync_playwright() as p:
+    mood_quiz()
     open_webpage_choose_mood()
     scrape_book_info()
     three_highest_ratings()
