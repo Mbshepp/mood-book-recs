@@ -213,9 +213,6 @@ def view_recommended_list():
         print(' ')
 
 
-
-#user_mood = "Happy".lower()
-
 with sync_playwright() as p:
     user_mood = mood_quiz()
     open_webpage_choose_mood(user_mood)
@@ -225,53 +222,6 @@ with sync_playwright() as p:
     present_books_to_user()
     #page.pause()
 
-
-
-'''for row in top_three_rated:
-        save_book = "Add " + row[0] + " To Your Reading List? (Y/N)"
-        win = tk.Toplevel()
-        win.geometry("180x100")
-        win.title('')
-        message = "Here Are Your Happy Book Recommendations! \n" + save_book
-        self.label(win, text=message).pack()
-        self.button(win, text='Yes')
-        self.button(win, text='No')
-        if button == 'Yes':
-            add_to_reading_list = reading_list.append(row[:5])
-        elif button == 'No':
-            print("Okay, I'll Just Add It To Your Recommended Books List")'''
-
-
-'''def scrape_top_three_books_full_info():
-    for row in top_three_rated:
-        open_webpage_choose_mood()
-        book_title = page.inner_text("h2")
-        if book_title in top_three_rated:
-            author_selector = page.inner_text("span.text-gray-500.drop-shadow-md")
-            print(author_selector)
-            book_summary = page.inner_text("div.pt-2.leading-relaxed.drop-shadow-md")
-            print(book_summary)
-            page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
-            purchase_link_locator = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg").get_attribute('href')
-            print("Purchase Link: ")
-            print(purchase_link_locator)
-            page.get_by_text("Next Book").scroll_into_view_if_needed()
-            page.click(f"text={'Next Book'}")
-            print("Author Name: " + author_selector)
-            print("Book Summary: " + book_summary)
-            for i in top_three_rated:
-                row.append(author_selector)
-                print("AUTHOR APPENDED")
-                print(top_three_rated)
-
-                return purchase_link_locator
-            return author_selector
-        return book_title
-    return top_three_rated'''
-
-
-'''top_three_rated[i].append(book_summary)
-        top_three_rated[i].append(purchase_link_locator)'''
 
 
 
