@@ -3,6 +3,7 @@ import requests
 import operator
 import re
 import base64
+import keyboard
 from flask import Flask
 from PIL import Image
 from playwright.sync_api import sync_playwright
@@ -16,6 +17,8 @@ from collections import OrderedDict
 import numpy as np
 from operator import itemgetter
 from urllib.request import urlretrieve
+from playwright.sync_api import sync_playwright
+
 
 '''
 moods_synonyms = {
@@ -40,14 +43,18 @@ title_rating_list = []
 book_title = None
 recommended_book_headings = []
 reading_list_headings = []
+collective_answers = []
+
 
 
 def mood_quiz():
+    global user_mood
+    user_mood = None
     quiz_questions = [
         "What kind of moment sounds most appealing right now?", "You're walking and your playlist surprises you. What hits best today?",
         "A friend says 'Tell me something real.' You say:", " Pick a setting that sounds closest to your current mood:",
         "Right now, your thoughts feel:", "You open a book. The first line should make you feel:",
-        " How does your body feel today?", " Which scene could you step into right now?", "Someone asks how you're really doing. You say:"
+        "How does your body feel today?", " Which scene could you step into right now?", "Someone asks how you're really doing. You say:"
     ]
 
     answers = [
@@ -60,8 +67,19 @@ def mood_quiz():
         ["A. Light, like there's a skip in your step.", "B. Like you're moving through molasses.", "C. Like you're buzzing with ideas or restlessness."],
         ["A. A candlelit room full of soft music.", "B. A city street, neon lights, people moving fast.", "C. A field of fireflies under a big sky."],
         ["A. 'Honestly? I'm doing okay. Better than usual.", "B. 'It's been a lot lately, but I'm managing.", " C. 'I don't know... I just feel off."]
-]
+    ]
 
+    answer_tree = [
+        ["Happy: Q1A, Q4A, Q7A, Q9A"],
+        ["Sad: Q3A, Q4B, Q7B, Q8A, Q9C"],
+        ["Enchanted: Q2A, Q4C, Q8C"],
+        ["Inspired: Q3B, Q6B, Q7C, Q9B"],
+        ["Nostalgic: Q1B, Q6A, Q8A"],
+        ["Humorous: Q3C, Q6C"],
+        ["Lonely: Q1C, Q5C, Q9C"],
+        ["Mad: Q2B, Q5A, Q7C, Q8B"],
+        ["Serious: Q2C, Q5B, Q8B, Q9B"]
+    ]
 
     for i, question in enumerate(quiz_questions):
         print(question)
@@ -72,37 +90,33 @@ def mood_quiz():
             f"{answer_row_index[1]}\n"
             f"{answer_row_index[2]}")
 
-        collective_answers = []
         user_answer = "q" + str(i+1) + user_input.lower()
         collective_answers.append(user_answer)
         print(collective_answers)
 
+        for row in answer_tree:
+            mood, triggers = row[0].split(": ")
+            individual_triggers = [x.strip().lower() for x in triggers.split(",")]
+
+            if any(trigger.lower() in collective_answers for trigger in individual_triggers):
+                user_mood = mood.lower()
+                break
+
+    return user_mood
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def open_webpage_choose_mood():
+def open_webpage_choose_mood(user_mood):
     global page
     browser = p.chromium.launch(headless=False)
     page = browser.new_page()
     page.goto("https://booksbymood.com/")
     page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")
-    timeout = 5000
-    page.click(f"text={user_mood}")
+    timeout = 2000
+
+    selector = f'a[href*="{user_mood}"]'
+
+    page.wait_for_selector(selector)
+    page.click(selector)
 
 
 def scrape_book_info():
@@ -171,11 +185,12 @@ def save_book_recommendations():
 def present_books_to_user():
     print("Here Are Your Happy Book Recommendations!")
     for row in top_three_rated:
-        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N)")
-        if save_book.lower() == "yes":
+        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")
+        if save_book.lower() in ["yes", "y"]:
             add_to_reading_list = reading_list.append(row[:5])
-        elif save_book.lower() == "no":
+        elif save_book.lower() in ["no","n"]:
             print("Okay, I'll Just Add It To Your Recommended Books List")
+            timeout=1000
     print("READING LIST")
     print(reading_list)
     print("RECOMMENDED BOOKS LIST")
@@ -199,11 +214,11 @@ def view_recommended_list():
 
 
 
-user_mood = "Happy".lower()
+#user_mood = "Happy".lower()
 
 with sync_playwright() as p:
-    mood_quiz()
-    open_webpage_choose_mood()
+    user_mood = mood_quiz()
+    open_webpage_choose_mood(user_mood)
     scrape_book_info()
     three_highest_ratings()
     save_book_recommendations()
