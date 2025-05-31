@@ -47,14 +47,15 @@ collective_answers = []
 
 
 
+
 def mood_quiz():
-    global user_mood
+    global user_mood, answer_tree
     user_mood = None
     quiz_questions = [
-        "What kind of moment sounds most appealing right now?", "You're walking and your playlist surprises you. What hits best today?",
-        "A friend says 'Tell me something real.' You say:", " Pick a setting that sounds closest to your current mood:",
-        "Right now, your thoughts feel:", "You open a book. The first line should make you feel:",
-        "How does your body feel today?", " Which scene could you step into right now?", "Someone asks how you're really doing. You say:"
+        "1. What kind of moment sounds most appealing right now?", "2. You're walking and your playlist surprises you. What hits best today?",
+        "3. A friend says 'Tell me something real.' You say:", "4. Pick a setting that sounds closest to your current mood:",
+        "5. Right now, your thoughts feel:", "6. You open a book. The first line should make you feel:",
+        "7. How does your body feel today?", "8. Which scene could you step into right now?", "9. Someone asks how you're really doing. You say:"
     ]
 
     answers = [
@@ -197,6 +198,77 @@ def present_books_to_user():
     print(recommended_books_list)
 
 
+def add_book_mood_headings(answer_tree, user_name):
+    if not any(row[0] == user_mood for row in recommended_book_headings):
+        inner_recommended_list = [user_mood]
+        recommended_book_headings.append(inner_recommended_list)
+    else:
+        for row in recommended_book_headings:
+            if row[0] == user_mood:
+                row.extend(recommended_books_list)
+
+    if not any(row[0] == user_mood for row in reading_list_headings):
+        inner_reading_list = [user_mood]
+        reading_list_headings.append(inner_reading_list)
+    else:
+        for row in reading_list_headings:
+            if row[0] == user_mood:
+                row.extend(reading_list)
+
+    return reading_list_headings, recommended_book_headings
+
+
+'''if not any(row and row[0] == user_mood for row in static_reading_headings_list):
+        new_row = [user_mood] + reading_list
+        static_reading_headings_list.append(new_row)
+    else:
+        for row in static_reading_headings_list:
+            if row[0] == user_mood:
+                row.extend(reading_list)
+                break'''
+
+
+
+
+'''if not any(row and row[0] == user_mood for row in static_reading_headings_list):
+        [user_mood].extend(reading_list)
+        static_reading_headings_list.extend([user_mood])
+
+        #for row in  static_reading_headings_list:
+            #if row[0] == user_mood:
+
+
+    return static_reading_headings_list, reading_list_headings'''
+
+        # Now, find that sublist and extend it with this round's reading list
+        #for row in static_reading_headings_list:
+            #if row[0] == user_mood:
+              #  row.extend(reading_list)
+                #break
+
+
+
+
+'''if not any(isinstance(row, list) and row and row[0] == user_mood for row in reading_list_headings):
+        inner_reading_list = [user_mood]
+        reading_list_headings.append(inner_reading_list)
+    else:
+        for row in reading_list_headings:
+            if row[0] == user_mood:
+                row.extend(reading_list)'''
+
+'''if not any(isinstance(row, list) and row and row[0] == user_mood for row in recommended_book_headings):
+        inner_recommended_list = [user_mood]
+        recommended_book_headings.append(inner_recommended_list)
+        return None
+    else:
+        for row in recommended_book_headings:
+            if row[0] == user_mood:
+                row.extend(recommended_books_list)
+                
+        return reading_list_headings, recommended_book_headings'''
+
+
 def view_reading_list():
     open_reading_list = input("View Reading List?")
     if open_reading_list.lower() == "Yes":
@@ -213,13 +285,21 @@ def view_recommended_list():
         print(' ')
 
 
-with sync_playwright() as p:
+with (sync_playwright() as p):
     user_mood = mood_quiz()
     open_webpage_choose_mood(user_mood)
     scrape_book_info()
     three_highest_ratings()
     save_book_recommendations()
     present_books_to_user()
+    add_book_mood_headings(answer_tree, user_mood)
+    print("READING LIST HEADINGS")
+    print(reading_list_headings)
+    print("RECOMMENDED LIST HEADINGS")
+    print(recommended_book_headings)
+    #print("RECOMMENDED LIST HEADINGS")
+    #print(recommended_book_headings)
+
     #page.pause()
 
 
