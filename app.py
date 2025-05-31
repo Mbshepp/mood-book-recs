@@ -1,38 +1,8 @@
-import heapq
 import requests
-import operator
 import re
-import base64
-import keyboard
-from flask import Flask
-from PIL import Image
 from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
-from sqlalchemy.util import counter
-from starlette_admin import HasOne
-from tenacity import before_log
-from fraction import Fraction
-from heapq import nlargest
-from collections import OrderedDict
-import numpy as np
-from operator import itemgetter
-from urllib.request import urlretrieve
 from playwright.sync_api import sync_playwright
 
-
-'''
-moods_synonyms = {
-    'Happy': ['happy','cheerful','elated'],
-    'Sad': ['sad','melancholy','downcast'],
-    'Enchanted': ['enchanted','captivated','wonderment'],
-    'Inspired': ['inspired','stimulated','emboldened'],
-    'Nostalgic': ['nostalgic','sentimental','wishful'],
-    'Lonely': ['lonely','isolated','forlorn'],
-    'Mad': ['mad','furious','irate'],
-    'Humorous': ['humorous','amusing','witty'],
-    'Serious': ['serious','solemn','earnest']
-}
-'''
 
 
 titles_and_ratings_list = []
@@ -44,7 +14,6 @@ book_title = None
 recommended_book_headings = []
 reading_list_headings = []
 collective_answers = []
-
 
 
 
@@ -112,7 +81,6 @@ def open_webpage_choose_mood(user_mood):
     page = browser.new_page()
     page.goto("https://booksbymood.com/")
     page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")
-    timeout = 2000
 
     selector = f'a[href*="{user_mood}"]'
 
@@ -132,7 +100,7 @@ def scrape_book_info():
             rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
             book_rating = (page.inner_text(rating_selector))
             a, b = book_rating.split("/")
-            float_book_rating = float(a) / float(b)
+            float(a) / float(b)
             author_selector = page.inner_text("span.text-gray-500.drop-shadow-md")
             book_summary = page.inner_text("div.pt-2.leading-relaxed.drop-shadow-md")
             page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
@@ -145,6 +113,8 @@ def scrape_book_info():
             titles_and_ratings_list.append(title_rating_list)
             page.get_by_text("Next Book").scroll_into_view_if_needed()
             page.click(f"text={'Next Book'}")
+
+    page.close()
 
     return title_rating_list
 
@@ -191,7 +161,6 @@ def present_books_to_user():
             add_to_reading_list = reading_list.append(row[:5])
         elif save_book.lower() in ["no","n"]:
             print("Okay, I'll Just Add It To Your Recommended Books List")
-            timeout=1000
     print("READING LIST")
     print(reading_list)
     print("RECOMMENDED BOOKS LIST")
@@ -216,57 +185,6 @@ def add_book_mood_headings(answer_tree, user_name):
                 row.extend(reading_list)
 
     return reading_list_headings, recommended_book_headings
-
-
-'''if not any(row and row[0] == user_mood for row in static_reading_headings_list):
-        new_row = [user_mood] + reading_list
-        static_reading_headings_list.append(new_row)
-    else:
-        for row in static_reading_headings_list:
-            if row[0] == user_mood:
-                row.extend(reading_list)
-                break'''
-
-
-
-
-'''if not any(row and row[0] == user_mood for row in static_reading_headings_list):
-        [user_mood].extend(reading_list)
-        static_reading_headings_list.extend([user_mood])
-
-        #for row in  static_reading_headings_list:
-            #if row[0] == user_mood:
-
-
-    return static_reading_headings_list, reading_list_headings'''
-
-        # Now, find that sublist and extend it with this round's reading list
-        #for row in static_reading_headings_list:
-            #if row[0] == user_mood:
-              #  row.extend(reading_list)
-                #break
-
-
-
-
-'''if not any(isinstance(row, list) and row and row[0] == user_mood for row in reading_list_headings):
-        inner_reading_list = [user_mood]
-        reading_list_headings.append(inner_reading_list)
-    else:
-        for row in reading_list_headings:
-            if row[0] == user_mood:
-                row.extend(reading_list)'''
-
-'''if not any(isinstance(row, list) and row and row[0] == user_mood for row in recommended_book_headings):
-        inner_recommended_list = [user_mood]
-        recommended_book_headings.append(inner_recommended_list)
-        return None
-    else:
-        for row in recommended_book_headings:
-            if row[0] == user_mood:
-                row.extend(recommended_books_list)
-                
-        return reading_list_headings, recommended_book_headings'''
 
 
 def view_reading_list():
@@ -297,10 +215,8 @@ with (sync_playwright() as p):
     print(reading_list_headings)
     print("RECOMMENDED LIST HEADINGS")
     print(recommended_book_headings)
-    #print("RECOMMENDED LIST HEADINGS")
-    #print(recommended_book_headings)
 
-    #page.pause()
+
 
 
 
