@@ -8,7 +8,6 @@ from playwright.sync_api import sync_playwright
 titles_and_ratings_list = []
 recommended_books_list = []
 reading_list = []
-#title_rating_dict ={}
 title_rating_list = []
 book_title = None
 recommended_book_headings = []
@@ -53,22 +52,22 @@ def mood_quiz():
 
     for i, question in enumerate(quiz_questions):
         print(question)
-        answer_row_index = answers[i]
+        answer_row_index = answers[i]                                   # Get answer row index to build user input question with answer choices a,b, & c.
         user_input = input(
             f" Choose: A, B, or C \n"
             f"{answer_row_index[0]}\n"
             f"{answer_row_index[1]}\n"
             f"{answer_row_index[2]}")
 
-        user_answer = "q" + str(i+1) + user_input.lower()
+        user_answer = "q" + str(i+1) + user_input.lower()               # Build answer code to save the user's choice and the question number into a list for final mood assessment.
         collective_answers.append(user_answer)
         print(collective_answers)
 
-        for row in answer_tree:
+        for row in answer_tree:                                                                 # defines user_mood to be used in open_webpage_choose_mood function
             mood, triggers = row[0].split(": ")
-            individual_triggers = [x.strip().lower() for x in triggers.split(",")]
+            individual_triggers = [x.strip().lower() for x in triggers.split(",")]              # strip commas & whitespace to analyze if each individual trigger is present in collective_answers
 
-            if any(trigger.lower() in collective_answers for trigger in individual_triggers):
+            if any(trigger.lower() in collective_answers for trigger in individual_triggers):       #CHECK IF THIS CODE GIVES ME OUTPUT I WANT
                 user_mood = mood.lower()
                 break
 
@@ -77,41 +76,41 @@ def mood_quiz():
 
 def open_webpage_choose_mood(user_mood):
     global page
-    browser = p.chromium.launch(headless=False)
+    browser = p.chromium.launch(headless=False)                                                     # To show browser actions as the code runs.
     page = browser.new_page()
     page.goto("https://booksbymood.com/")
-    page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")
+    page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")      # To make sure the page is fully loaded before selectors are searched for.
 
-    selector = f'a[href*="{user_mood}"]'
+    selector = f'a[href*="{user_mood}"]'                                                            # The button/selector text is equal to user_mood.
 
-    page.wait_for_selector(selector)
+    page.wait_for_selector(selector)                                                                # To ensure mood selector is loaded before attempting to click it.
     page.click(selector)
 
 
 def scrape_book_info():
     global book_title
     global title_rating_list, book_title
-    while len(titles_and_ratings_list) < 5:
+    while len(titles_and_ratings_list) < 5:                                                                 # To select information for a maximum of five books.
         book_title = page.inner_text("h2")
-        if book_title in recommended_books_list:
-            page.get_by_text("Next Book").scroll_into_view_if_needed()
+        if book_title in recommended_books_list:                                                            # To ensure only books that have not been previously recommended are recommended to the user.
+            page.get_by_text("Next Book").scroll_into_view_if_needed()                                      # To find the "Next Book" button
             page.click(f"text={'Next Book'}")
         else:
             rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
             book_rating = (page.inner_text(rating_selector))
-            a, b = book_rating.split("/")
+            a, b = book_rating.split("/")                                       # To make the rating fraction usable as two floats
             float(a) / float(b)
             author_selector = page.inner_text("span.text-gray-500.drop-shadow-md")
             book_summary = page.inner_text("div.pt-2.leading-relaxed.drop-shadow-md")
-            page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")
+            page.wait_for_selector("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg")                                         # To make sure purchase link selector loads before trying to save it.
             purchase_link_locator = page.locator("a.btn.w-full.justify-self-center.rounded-lg.bg-base-300.shadow-lg").get_attribute('href')
-            get_real_amazon_url(purchase_link_locator)
-            get_amazon_image_url(purchase_link_locator)
-            img_url = get_amazon_image_url(purchase_link_locator)
+            get_real_amazon_url(purchase_link_locator)                                                                                          # Amazon link URL is embedded in the Purchase link locator. I need to extract and present it to user.
+            get_amazon_image_url(purchase_link_locator)                                                                                         # Book image URL is embedded in the Purchase link locator. I need to extract and present it to user.
+            img_url = get_amazon_image_url(purchase_link_locator)                                                                               # To later create code to show user the books image
 
-            title_rating_list = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]
-            titles_and_ratings_list.append(title_rating_list)
-            page.get_by_text("Next Book").scroll_into_view_if_needed()
+            title_rating_list = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each books distinctive data
+            titles_and_ratings_list.append(title_rating_list)                                                                                   # To store each books data to later sort and present to the user
+            page.get_by_text("Next Book").scroll_into_view_if_needed()                                                                          # To ensure the "Next Book" button is visible.
             page.click(f"text={'Next Book'}")
 
     page.close()
@@ -123,16 +122,16 @@ def three_highest_ratings():
     global top_three_rated
     top_three_rated = []
     #sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: list(x.values())[0], reverse=True)
-    sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: x[1], reverse=True)
-    top_three_rated = sorted_high_low[:3]
+    sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
+    top_three_rated = sorted_high_low[:3]                                                                       # To only present the top three rated books to the user.
 
     return top_three_rated
 
 
 def get_real_amazon_url(purchase_link_locator):
-    try:
+    try:                                                                                                        # To Catch unsuccessful attempts to get amazon url.
         response = requests.get(purchase_link_locator, allow_redirects=True, timeout=5)
-        return response.url
+        return response.url                                                                                     # To later use to extract the book image url from Amazon and present amazon link to user.
     except Exception as e:
         print("Redirect failed", e)
         return None
@@ -141,24 +140,24 @@ def get_real_amazon_url(purchase_link_locator):
 def get_amazon_image_url(purchase_link_locator):
     real_url = get_real_amazon_url(purchase_link_locator)
     if real_url:
-        match = re.search(r'/dp/(\w+)', real_url)
+        match = re.search(r'/dp/(\w+)', real_url)                                                        # To find and extract the specific ID for the book within the link
         if match:
-            amzn_link_tail = match.group(1)
-            return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"
+            amzn_link_tail = match.group(1)                                                                     # To later insert the link tail in the Amazon image link
+            return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"     # The amazon link needs the distinct tail portion for the image link.
     return None
 
 
 def save_book_recommendations():
     for book in top_three_rated:
-        add_to_recommended_books_list = recommended_books_list.append(book[:5])
+        add_to_recommended_books_list = recommended_books_list.append(book[:5])                                 # To track which books have already been recommended.
 
 
 def present_books_to_user():
     print("Here Are Your Happy Book Recommendations!")
     for row in top_three_rated:
-        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")
+        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")                                    # To ask user if they want to save book title to reading list.
         if save_book.lower() in ["yes", "y"]:
-            add_to_reading_list = reading_list.append(row[:5])
+            add_to_reading_list = reading_list.append(row[:5])                                                  # To save all book info except the image url because the user
         elif save_book.lower() in ["no","n"]:
             print("Okay, I'll Just Add It To Your Recommended Books List")
     print("READING LIST")
