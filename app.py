@@ -1,7 +1,7 @@
 import requests
 import re
 from playwright.sync_api import sync_playwright
-from playwright.sync_api import sync_playwright
+#from playwright.sync_api import sync_playwright
 
 
 
@@ -14,6 +14,27 @@ recommended_book_headings = []
 reading_list_headings = []
 collective_answers = []
 
+
+def build_answer_code(i, user_input):
+    return "q" + str(i +1) + user_input.strip().lower()
+
+
+# To ensure the user is only entering valid inputs.
+def is_valid_quiz_input(user_input):
+    return user_input.strip().lower() in ['a','b','c']
+
+
+answer_tree = [
+        ["Happy: Q1A, Q4A, Q7A, Q9A"],
+        ["Sad: Q3A, Q4B, Q7B, Q8A, Q9C"],
+        ["Enchanted: Q2A, Q4C, Q8C"],
+        ["Inspired: Q3B, Q6B, Q7C, Q9B"],
+        ["Nostalgic: Q1B, Q6A, Q8A"],
+        ["Humorous: Q3C, Q6C"],
+        ["Lonely: Q1C, Q5C, Q9C"],
+        ["Mad: Q2B, Q5A, Q7C, Q8B"],
+        ["Serious: Q2C, Q5B, Q8B, Q9B"]
+    ]
 
 
 def mood_quiz():
@@ -38,28 +59,27 @@ def mood_quiz():
         ["A. 'Honestly? I'm doing okay. Better than usual.", "B. 'It's been a lot lately, but I'm managing.", " C. 'I don't know... I just feel off."]
     ]
 
-    answer_tree = [
-        ["Happy: Q1A, Q4A, Q7A, Q9A"],
-        ["Sad: Q3A, Q4B, Q7B, Q8A, Q9C"],
-        ["Enchanted: Q2A, Q4C, Q8C"],
-        ["Inspired: Q3B, Q6B, Q7C, Q9B"],
-        ["Nostalgic: Q1B, Q6A, Q8A"],
-        ["Humorous: Q3C, Q6C"],
-        ["Lonely: Q1C, Q5C, Q9C"],
-        ["Mad: Q2B, Q5A, Q7C, Q8B"],
-        ["Serious: Q2C, Q5B, Q8B, Q9B"]
-    ]
 
     for i, question in enumerate(quiz_questions):
         print(question)
-        answer_row_index = answers[i]                                   # Get answer row index to build user input question with answer choices a,b, & c.
-        user_input = input(
-            f" Choose: A, B, or C \n"
-            f"{answer_row_index[0]}\n"
-            f"{answer_row_index[1]}\n"
-            f"{answer_row_index[2]}")
+        answer_row_index = answers[i]   # Get answer row index to build user input question with answer choices a,b, & c.
 
-        user_answer = "q" + str(i+1) + user_input.lower()               # Build answer code to save the user's choice and the question number into a list for final mood assessment.
+        while True:
+            user_input = input(                     # To present the choices for each question for input.
+                f" Choose: A, B, or C \n"
+                f"{answer_row_index[0]}\n"          
+                f"{answer_row_index[1]}\n"
+                f"{answer_row_index[2]}"
+            )
+
+            if is_valid_quiz_input(user_input):
+                user_input = user_input.strip().lower()
+                break
+            else:
+                print("Invalid choice. Please enter A, B, or C.")
+
+
+        user_answer = build_answer_code(i,user_input)                                              # Have an answer code for each user's choice to determine their mood.
         collective_answers.append(user_answer)
         print(collective_answers)
 
@@ -67,11 +87,21 @@ def mood_quiz():
             mood, triggers = row[0].split(": ")
             individual_triggers = [x.strip().lower() for x in triggers.split(",")]              # strip commas & whitespace to analyze if each individual trigger is present in collective_answers
 
-            if any(trigger.lower() in collective_answers for trigger in individual_triggers):       #CHECK IF THIS CODE GIVES ME OUTPUT I WANT
+            if any(trigger.lower() in collective_answers for trigger in individual_triggers):       # Check if this code gives me the output I want.
                 user_mood = mood.lower()
                 break
-
     return user_mood
+
+
+def get_user_mood(collective_answers, answer_tree):
+    for row in answer_tree:
+        mood, triggers = row[0].split(":")
+        individual_triggers = [x.strip().lower() for x in triggers.split(",")]
+        if any(trigger in collective_answers for trigger in individual_triggers):
+            return mood.lower()
+        print("row[0] is:", row[0], "type:", type(row[0]))
+
+    return None
 
 
 def open_webpage_choose_mood(user_mood):
@@ -79,7 +109,7 @@ def open_webpage_choose_mood(user_mood):
     browser = p.chromium.launch(headless=False)                                                     # To show browser actions as the code runs.
     page = browser.new_page()
     page.goto("https://booksbymood.com/")
-    page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")      # To make sure the page is fully loaded before selectors are searched for.
+    page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")      # ensures mood selector isn't searched for until page elements appear.
 
     selector = f'a[href*="{user_mood}"]'                                                            # The button/selector text is equal to user_mood.
 
@@ -98,7 +128,7 @@ def scrape_book_info():
         else:
             rating_selector = 'div.tooltip.tooltip-top.md\\:tooltip-right[data-tip^="From GoodReads"]'
             book_rating = (page.inner_text(rating_selector))
-            a, b = book_rating.split("/")                                       # To make the rating fraction usable as two floats
+            a, b = book_rating.split("/")                                                                      # To make the rating fraction usable as two floats for sorting.
             float(a) / float(b)
             author_selector = page.inner_text("span.text-gray-500.drop-shadow-md")
             book_summary = page.inner_text("div.pt-2.leading-relaxed.drop-shadow-md")
@@ -142,7 +172,7 @@ def get_amazon_image_url(purchase_link_locator):
     if real_url:
         match = re.search(r'/dp/(\w+)', real_url)                                                        # To find and extract the specific ID for the book within the link
         if match:
-            amzn_link_tail = match.group(1)                                                                     # To later insert the link tail in the Amazon image link
+            amzn_link_tail = match.group(1)                                                                     #Extracts the book's ID from the URL for image lookup.
             return f"https://images-na.ssl-images-amazon.com/images/P/{amzn_link_tail}.01._SCLZZZZZZZ_.jpg"     # The amazon link needs the distinct tail portion for the image link.
     return None
 
@@ -157,7 +187,7 @@ def present_books_to_user():
     for row in top_three_rated:
         save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")                                    # To ask user if they want to save book title to reading list.
         if save_book.lower() in ["yes", "y"]:
-            add_to_reading_list = reading_list.append(row[:5])                                                  # To save all book info except the image url because the user
+            add_to_reading_list = reading_list.append(row[:5])                                                  # To save book info except the image url if user wants to save it to reading list.
         elif save_book.lower() in ["no","n"]:
             print("Okay, I'll Just Add It To Your Recommended Books List")
     print("READING LIST")
@@ -167,6 +197,7 @@ def present_books_to_user():
 
 
 def add_book_mood_headings(answer_tree, user_name):
+    # To organize recommended list books if heading not already present
     if not any(row[0] == user_mood for row in recommended_book_headings):
         inner_recommended_list = [user_mood]
         recommended_book_headings.append(inner_recommended_list)
@@ -175,6 +206,7 @@ def add_book_mood_headings(answer_tree, user_name):
             if row[0] == user_mood:
                 row.extend(recommended_books_list)
 
+    # To organize Reading list books if heading not already present
     if not any(row[0] == user_mood for row in reading_list_headings):
         inner_reading_list = [user_mood]
         reading_list_headings.append(inner_reading_list)
@@ -191,30 +223,39 @@ def view_reading_list():
     if open_reading_list.lower() == "Yes":
         print(reading_list)
     elif open_reading_list.lower() == "No":
-        print(' ')
+        print(' ')  # Placeholder if user doesn't want to view the list.
 
 
 def view_recommended_list():
     open_recommended_list = input("View Recommended List?")
     if open_recommended_list.lower() == "Yes":
-        print(reading_list)
+        print(recommended_books_list)
     elif open_recommended_list.lower() == "No":
         print(' ')
 
 
-with (sync_playwright() as p):
-    user_mood = mood_quiz()
-    open_webpage_choose_mood(user_mood)
-    scrape_book_info()
-    three_highest_ratings()
-    save_book_recommendations()
-    present_books_to_user()
-    add_book_mood_headings(answer_tree, user_mood)
-    print("READING LIST HEADINGS")
-    print(reading_list_headings)
-    print("RECOMMENDED LIST HEADINGS")
-    print(recommended_book_headings)
 
+
+
+def main():
+    user_mood = mood_quiz()
+
+
+    with (sync_playwright() as p):
+        open_webpage_choose_mood(user_mood)                     # To open website, select user's mood, and books based on the mood.
+        scrape_book_info()                                      # To organize book details and present to the user.
+        three_highest_ratings()                                 # To only show the user the top three books selected from the website.
+        save_book_recommendations()                             # To keep track of all recommended books, so the user is presented with new choices later.
+        present_books_to_user()                                 # To allow the user to view all book details and choose to save to reading list or recommended list.
+        add_book_mood_headings(answer_tree, user_mood)          # To organize the books in the reading list and recommended list.
+        print("READING LIST HEADINGS")
+        print(reading_list_headings)
+        print("RECOMMENDED LIST HEADINGS")
+        print(recommended_book_headings)
+
+
+if __name__ == "__main__":
+    main()
 
 
 
