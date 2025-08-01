@@ -1,7 +1,6 @@
 import requests
 import re
 from playwright.sync_api import sync_playwright
-#from playwright.sync_api import sync_playwright
 
 
 
@@ -15,15 +14,6 @@ reading_list_headings = []
 collective_answers = []
 
 
-def build_answer_code(i, user_input):
-    return "q" + str(i +1) + user_input.strip().lower()
-
-
-# To ensure the user is only entering valid inputs.
-def is_valid_quiz_input(user_input):
-    return user_input.strip().lower() in ['a','b','c']
-
-
 answer_tree = [
         ["Happy: Q1A, Q4A, Q7A, Q9A"],
         ["Sad: Q3A, Q4B, Q7B, Q8A, Q9C"],
@@ -35,6 +25,40 @@ answer_tree = [
         ["Mad: Q2B, Q5A, Q7C, Q8B"],
         ["Serious: Q2C, Q5B, Q8B, Q9B"]
     ]
+
+
+def build_answer_code(i, user_input):
+    return "q" + str(i +1) + user_input.strip().lower()
+
+
+# To ensure the user is only entering valid inputs.
+def is_valid_quiz_input(user_input):
+    return user_input.strip().lower() in ['a','b','c']
+
+
+def main_menu():
+    while True:
+        print("\nWhat would you like to do?")
+        print("1. Take the Mood Quiz")
+        print("2. View Reading List")
+        print("3. View Recommended List")
+        print("4. Exit")
+
+        menu_choice = input("Enter your choice (1-4): ").strip()
+
+        if menu_choice == "1":
+            main()
+        elif menu_choice == "2":
+            print("Reading List")
+            print(reading_list)
+        elif menu_choice == "3":
+            print("Recommended List")
+            print(recommended_books_list)
+        elif menu_choice == "4":
+            print("Goodbye")
+            break
+        else:
+            print("Invalid option. Please enter a number between 1 and 4.")
 
 
 def mood_quiz():
@@ -104,7 +128,7 @@ def get_user_mood(collective_answers, answer_tree):
     return None
 
 
-def open_webpage_choose_mood(user_mood):
+def open_webpage_choose_mood(user_mood,p):
     global page
     browser = p.chromium.launch(headless=False)                                                     # To show browser actions as the code runs.
     page = browser.new_page()
@@ -139,7 +163,7 @@ def scrape_book_info():
             img_url = get_amazon_image_url(purchase_link_locator)                                                                               # To later create code to show user the books image
 
             individual_book_info = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each books distinctive data
-            collective_book_list.append(collective_book_list)                                                                                   # To store each books data to later sort and present to the user
+            collective_book_list.append(individual_book_info)                                                                                   # To store each books data to later sort and present to the user
             page.get_by_text("Next Book").scroll_into_view_if_needed()                                                                          # To ensure the "Next Book" button is visible.
             page.click(f"text={'Next Book'}")
 
@@ -149,7 +173,7 @@ def scrape_book_info():
 
 
 def three_highest_ratings(book_list=None):
-    # global top_three_rated
+    global top_three_rated
     if book_list is None:
         book_list = collective_book_list
 
@@ -240,20 +264,16 @@ def main():
 
 
     with (sync_playwright() as p):
-        open_webpage_choose_mood(user_mood)                     # To open website, select user's mood, and books based on the mood.
+        open_webpage_choose_mood(user_mood,p)                     # To open website, select user's mood, and books based on the mood.
         scrape_book_info()                                      # To organize book details and present to the user.
         three_highest_ratings()                                 # To only show the user the top three books selected from the website.
         save_book_recommendations()                             # To keep track of all recommended books, so the user is presented with new choices later.
         present_books_to_user()                                 # To allow the user to view all book details and choose to save to reading list or recommended list.
         add_book_mood_headings(answer_tree, user_mood)          # To organize the books in the reading list and recommended list.
-        print("READING LIST HEADINGS")
-        print(reading_list_headings)
-        print("RECOMMENDED LIST HEADINGS")
-        print(recommended_book_headings)
 
 
 if __name__ == "__main__":
-    main()
+    main_menu()
 
 
 
