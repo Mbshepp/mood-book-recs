@@ -5,10 +5,10 @@ from playwright.sync_api import sync_playwright
 
 
 
-titles_and_ratings_list = []
+collective_book_list = []
 recommended_books_list = []
 reading_list = []
-title_rating_list = []
+individual_book_info = []
 book_title = None
 recommended_book_headings = []
 reading_list_headings = []
@@ -119,8 +119,8 @@ def open_webpage_choose_mood(user_mood):
 
 def scrape_book_info():
     global book_title
-    global title_rating_list, book_title
-    while len(titles_and_ratings_list) < 5:                                                                 # To select information for a maximum of five books.
+    global individual_book_info, book_title
+    while len(collective_book_list) < 5:                                                                 # To select information for a maximum of five books.
         book_title = page.inner_text("h2")
         if book_title in recommended_books_list:                                                            # To ensure only books that have not been previously recommended are recommended to the user.
             page.get_by_text("Next Book").scroll_into_view_if_needed()                                      # To find the "Next Book" button
@@ -138,20 +138,20 @@ def scrape_book_info():
             get_amazon_image_url(purchase_link_locator)                                                                                         # Book image URL is embedded in the Purchase link locator. I need to extract and present it to user.
             img_url = get_amazon_image_url(purchase_link_locator)                                                                               # To later create code to show user the books image
 
-            title_rating_list = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each books distinctive data
-            titles_and_ratings_list.append(title_rating_list)                                                                                   # To store each books data to later sort and present to the user
+            individual_book_info = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each books distinctive data
+            collective_book_list.append(collective_book_list)                                                                                   # To store each books data to later sort and present to the user
             page.get_by_text("Next Book").scroll_into_view_if_needed()                                                                          # To ensure the "Next Book" button is visible.
             page.click(f"text={'Next Book'}")
 
     page.close()
 
-    return title_rating_list
+    return individual_book_info
 
 
 def three_highest_ratings(book_list=None):
     # global top_three_rated
     if book_list is None:
-        book_list = titles_and_ratings_list
+        book_list = collective_book_list
 
     sorted_high_low = sorted(book_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
     top_three_rated = sorted_high_low[:3]                                                                       # To only present the top three rated books to the user.
@@ -233,9 +233,6 @@ def view_recommended_list():
         print(recommended_books_list)
     elif open_recommended_list.lower() == "No":
         print(' ')
-
-
-
 
 
 def main():

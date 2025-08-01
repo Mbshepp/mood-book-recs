@@ -4,8 +4,8 @@ from app import(
     get_user_mood,
     answer_tree,
     three_highest_ratings,
-    titles_and_ratings_list
-)
+    collective_book_list
+    )
 
 
 def test_is_valid_quiz_input():
@@ -36,7 +36,7 @@ def test_get_user_mood_inspired():
     assert get_user_mood(answers, answer_tree) == 'inspired'
 
 
-def test_titles_and_ratings_list():
+def test_collective_book_list():
     five_test_books = [
         ["Book 1", 4.9, "Author A", "summaryA", "urlA", "imgA"],
         ["Book 2", 3.4, "Author B", "summaryB", "urlB", "imgB"],
