@@ -148,11 +148,12 @@ def scrape_book_info():
     return title_rating_list
 
 
-def three_highest_ratings():
-    global top_three_rated
-    top_three_rated = []
-    #sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: list(x.values())[0], reverse=True)
-    sorted_high_low = sorted(titles_and_ratings_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
+def three_highest_ratings(book_list=None):
+    # global top_three_rated
+    if book_list is None:
+        book_list = titles_and_ratings_list
+
+    sorted_high_low = sorted(book_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
     top_three_rated = sorted_high_low[:3]                                                                       # To only present the top three rated books to the user.
 
     return top_three_rated
