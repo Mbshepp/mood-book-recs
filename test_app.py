@@ -3,7 +3,8 @@ from app import(
     build_answer_code,
     get_user_mood,
     answer_tree,
-    three_highest_ratings
+    three_highest_ratings,
+    titles_and_ratings_list
 )
 
 
@@ -35,13 +36,35 @@ def test_get_user_mood_inspired():
     assert get_user_mood(answers, answer_tree) == 'inspired'
 
 
+def test_titles_and_ratings_list():
+    five_test_books = [
+        ["Book 1", 4.9, "Author A", "summaryA", "urlA", "imgA"],
+        ["Book 2", 3.4, "Author B", "summaryB", "urlB", "imgB"],
+        ["Book 3", 5.0, "Author C", "summaryC", "urlC", "imgC"],
+        ["Book 4", 2.5, "Author D", "summaryD", "urlD", "imgD"],
+        ["Book 5", 1.4, "Author E", "summaryE", "urlE", "imgE"]
+    ]
+
+    assert len(five_test_books) == 5, "Expected 5 books scraped"
+
+    for book in five_test_books:
+        assert len(book) == 6, f"Expected each book to have 6 elements, got {len(book)}"
+
+
 def test_three_highest_ratings():
     book1 = ["Book A", 4.9, "Author A", "summaryA", "urlA", "imgA"]
     book2 = ["Book B", 3.4, "Author B", "summaryB", "urlB", "imgB"]
     book3 = ["Book C", 5.0, "Author C", "summaryC", "urlC", "imgC"]
     book4 = ["Book D", 2.5, "Author D", "summaryD", "urlD", "imgD"]
+    book5 = ["Book E", 1.4, "Author E", "summaryE", "urlE", "imgE"]
 
-    input_books = [book1, book2, book3, book4]
+
+    input_books = [book1, book2, book3, book4, book5]
     result = three_highest_ratings(input_books)
 
     assert result == [book3, book1, book2]
+
+
+
+
+
