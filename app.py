@@ -1,7 +1,7 @@
 import requests
 import re
 from playwright.sync_api import sync_playwright
-
+import sqlite3
 
 
 collective_book_list = []
@@ -27,6 +27,46 @@ answer_tree = [
     ]
 
 
+def initialize_database():
+    conn = sqlite3.connect("moodbooks.db")
+    cursor = conn.cursor()
+
+    with open("schema.sql", "r") as f:
+        schema_script = f.read()
+
+    cursor.executescript(schema_script)
+    conn.commit()
+    conn.close()
+
+
+def add_book_to_reading_list(book, mood):
+    conn = sqlite3.connect("moodbooks.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO reading_list (title, rating, author, summary, purchase_link, mood) VALUES (?,?,?,?,?,?)",
+        (book[0], book[1], book[3], book[4], mood)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_reading_list():
+    conn = sqlite3.connect("moodbooks.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title FROM reading_list")
+    books = cursor.fetchall()
+    conn.close()
+    return books
+
+
+def delete_book_from_reading_list(book_id):
+    conn = sqlite3.connect("moodbooks.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM reading_list WHERE id =?", (book_id,))
+    conn.commit()
+    conn.close()
+
+
 def build_answer_code(i, user_input):
     return "q" + str(i +1) + user_input.strip().lower()
 
@@ -49,8 +89,28 @@ def main_menu():
         if menu_choice == "1":
             main()
         elif menu_choice == "2":
-            print("Reading List")
-            print(reading_list)
+            books = get_reading_list()
+            if not books:
+                print("\nYour  reading list is empty.")
+            else:
+                print("\nYour Reading List:")
+                for book in books:
+                    print(f"{book[0]}. {book[1]}")
+
+                while True:
+                    delete_book = input("]nWould you like to remove a book? (Y/N").strip().lower()
+                    if delete_book in ["y", "yes"]:
+                        try:
+                            book_id = int(input("Enter the ID of the book to remove: "))
+                            delete_book_from_reading_list(book_id)
+                            print(f"Removed book with ID: {book_id}")
+                            break
+                        except ValueError:
+                            print("Please enter a valid number")
+                    elif delete_book in ["n", "no"]:
+                        break
+                    else:
+                        print("Invalid input. Please enter Y or N.")
         elif menu_choice == "3":
             print("Recommended List")
             print(recommended_books_list)
@@ -212,7 +272,7 @@ def present_books_to_user():
     for row in top_three_rated:
         save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")                                    # To ask user if they want to save book title to reading list.
         if save_book.lower() in ["yes", "y"]:
-            add_to_reading_list = reading_list.append(row[:5])                                                  # To save book info except the image url if user wants to save it to reading list.
+            add_book_to_reading_list(row[:5], user_mood)
         elif save_book.lower() in ["no","n"]:
             print("Okay, I'll Just Add It To Your Recommended Books List")
     print("READING LIST")
@@ -260,6 +320,7 @@ def view_recommended_list():
 
 
 def main():
+    initialize_database()
     user_mood = mood_quiz()
 
 
