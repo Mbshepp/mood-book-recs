@@ -2,6 +2,22 @@ import requests
 import re
 from playwright.sync_api import sync_playwright
 import sqlite3
+import os
+from database import (
+    get_reading_list,
+    delete_book_from_reading_list,
+    add_book_to_reading_list,
+    initialize_database,
+    create_tables_from_schema
+)
+
+from quiz_logic import (
+    mood_quiz,
+    build_answer_code,
+    is_valid_quiz_input,
+    get_user_mood,
+    answer_tree
+)
 
 
 collective_book_list = []
@@ -14,69 +30,9 @@ reading_list_headings = []
 collective_answers = []
 
 
-answer_tree = [
-        ["Happy: Q1A, Q4A, Q7A, Q9A"],
-        ["Sad: Q3A, Q4B, Q7B, Q8A, Q9C"],
-        ["Enchanted: Q2A, Q4C, Q8C"],
-        ["Inspired: Q3B, Q6B, Q7C, Q9B"],
-        ["Nostalgic: Q1B, Q6A, Q8A"],
-        ["Humorous: Q3C, Q6C"],
-        ["Lonely: Q1C, Q5C, Q9C"],
-        ["Mad: Q2B, Q5A, Q7C, Q8B"],
-        ["Serious: Q2C, Q5B, Q8B, Q9B"]
-    ]
-
-
-def initialize_database():
-    conn = sqlite3.connect("moodbooks.db")
-    cursor = conn.cursor()
-
-    with open("schema.sql", "r") as f:
-        schema_script = f.read()
-
-    cursor.executescript(schema_script)
-    conn.commit()
-    conn.close()
-
-
-def add_book_to_reading_list(book, mood):
-    conn = sqlite3.connect("moodbooks.db")
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO reading_list (title, rating, author, summary, purchase_link, mood) VALUES (?,?,?,?,?,?)",
-        (book[0], book[1], book[3], book[4], mood)
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_reading_list():
-    conn = sqlite3.connect("moodbooks.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, title FROM reading_list")
-    books = cursor.fetchall()
-    conn.close()
-    return books
-
-
-def delete_book_from_reading_list(book_id):
-    conn = sqlite3.connect("moodbooks.db")
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM reading_list WHERE id =?", (book_id,))
-    conn.commit()
-    conn.close()
-
-
-def build_answer_code(i, user_input):
-    return "q" + str(i +1) + user_input.strip().lower()
-
-
-# To ensure the user is only entering valid inputs.
-def is_valid_quiz_input(user_input):
-    return user_input.strip().lower() in ['a','b','c']
-
-
-def main_menu():
+# ------------   MAIN MENU ----------------------------
+def main_menu(answer_tree):
+    """ Presents the user with menu choices to navigate the app."""
     while True:
         print("\nWhat would you like to do?")
         print("1. Take the Mood Quiz")
@@ -98,7 +54,7 @@ def main_menu():
                     print(f"{book[0]}. {book[1]}")
 
                 while True:
-                    delete_book = input("]nWould you like to remove a book? (Y/N").strip().lower()
+                    delete_book = input("\nWould you like to remove a book? (Y/N").strip().lower()
                     if delete_book in ["y", "yes"]:
                         try:
                             book_id = int(input("Enter the ID of the book to remove: "))
@@ -121,74 +77,10 @@ def main_menu():
             print("Invalid option. Please enter a number between 1 and 4.")
 
 
-def mood_quiz():
-    global user_mood, answer_tree
-    user_mood = None
-    quiz_questions = [
-        "1. What kind of moment sounds most appealing right now?", "2. You're walking and your playlist surprises you. What hits best today?",
-        "3. A friend says 'Tell me something real.' You say:", "4. Pick a setting that sounds closest to your current mood:",
-        "5. Right now, your thoughts feel:", "6. You open a book. The first line should make you feel:",
-        "7. How does your body feel today?", "8. Which scene could you step into right now?", "9. Someone asks how you're really doing. You say:"
-    ]
-
-    answers = [
-        ["A. Sitting in a sunny spot with something sweet to sip.", "B. Wandering through an old bookstore or antique shop","C. Getting lost in a quiet place with no phone service"],
-        ["A. Something dreamy and cinematic.", "B. Something that punches the air and moves fast", "C. Something with depth that makes you think"],
-        ["A. Honestly? I'm not sure how I'm doing.", "B. I feel like I'm waking up from something.", "C. Life's weird, but at least it's never boring."],
-        ["A. A rooftop at golden hour.", "B. A quiet kitchen at midnight.", "C. A mossy trail you haven't walked before."],
-        ["A. Sharp and pointed.", "B. Heavy but honest.", "C. Like a cloud you're trying to hold."],
-        ["A. Like you're about to remember something you forgot.", "B. Like anything is possible.", " C. Like you're about to laugh out loud."],
-        ["A. Light, like there's a skip in your step.", "B. Like you're moving through molasses.", "C. Like you're buzzing with ideas or restlessness."],
-        ["A. A candlelit room full of soft music.", "B. A city street, neon lights, people moving fast.", "C. A field of fireflies under a big sky."],
-        ["A. 'Honestly? I'm doing okay. Better than usual.", "B. 'It's been a lot lately, but I'm managing.", " C. 'I don't know... I just feel off."]
-    ]
-
-
-    for i, question in enumerate(quiz_questions):
-        print(question)
-        answer_row_index = answers[i]   # Get answer row index to build user input question with answer choices a,b, & c.
-
-        while True:
-            user_input = input(                     # To present the choices for each question for input.
-                f" Choose: A, B, or C \n"
-                f"{answer_row_index[0]}\n"          
-                f"{answer_row_index[1]}\n"
-                f"{answer_row_index[2]}"
-            )
-
-            if is_valid_quiz_input(user_input):
-                user_input = user_input.strip().lower()
-                break
-            else:
-                print("Invalid choice. Please enter A, B, or C.")
-
-
-        user_answer = build_answer_code(i,user_input)                                              # Have an answer code for each user's choice to determine their mood.
-        collective_answers.append(user_answer)
-        print(collective_answers)
-
-        for row in answer_tree:                                                                 # defines user_mood to be used in open_webpage_choose_mood function
-            mood, triggers = row[0].split(": ")
-            individual_triggers = [x.strip().lower() for x in triggers.split(",")]              # strip commas & whitespace to analyze if each individual trigger is present in collective_answers
-
-            if any(trigger.lower() in collective_answers for trigger in individual_triggers):       # Check if this code gives me the output I want.
-                user_mood = mood.lower()
-                break
-    return user_mood
-
-
-def get_user_mood(collective_answers, answer_tree):
-    for row in answer_tree:
-        mood, triggers = row[0].split(":")
-        individual_triggers = [x.strip().lower() for x in triggers.split(",")]
-        if any(trigger in collective_answers for trigger in individual_triggers):
-            return mood.lower()
-        print("row[0] is:", row[0], "type:", type(row[0]))
-
-    return None
-
+# --------------------  SCRAPING LOGIC --------------------------------
 
 def open_webpage_choose_mood(user_mood,p):
+    """ Opens a headless browser and navigates to booksbymood.com"""
     global page
     browser = p.chromium.launch(headless=False)                                                     # To show browser actions as the code runs.
     page = browser.new_page()
@@ -196,12 +88,12 @@ def open_webpage_choose_mood(user_mood,p):
     page.wait_for_selector("h2.text-3xl.font-semibold.text-accent.text-center.drop-shadow-md")      # ensures mood selector isn't searched for until page elements appear.
 
     selector = f'a[href*="{user_mood}"]'                                                            # The button/selector text is equal to user_mood.
-
     page.wait_for_selector(selector)                                                                # To ensure mood selector is loaded before attempting to click it.
     page.click(selector)
 
 
 def scrape_book_info():
+    """Scrapes each book's information like title, author, summary, rating, amazon link, and image url."""
     global book_title
     global individual_book_info, book_title
     while len(collective_book_list) < 5:                                                                 # To select information for a maximum of five books.
@@ -222,29 +114,17 @@ def scrape_book_info():
             get_amazon_image_url(purchase_link_locator)                                                                                         # Book image URL is embedded in the Purchase link locator. I need to extract and present it to user.
             img_url = get_amazon_image_url(purchase_link_locator)                                                                               # To later create code to show user the books image
 
-            individual_book_info = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each books distinctive data
+            individual_book_info = [book_title, book_rating, author_selector, book_summary, purchase_link_locator, img_url]                        # To collect each book's distinctive data
             collective_book_list.append(individual_book_info)                                                                                   # To store each books data to later sort and present to the user
             page.get_by_text("Next Book").scroll_into_view_if_needed()                                                                          # To ensure the "Next Book" button is visible.
             page.click(f"text={'Next Book'}")
-
     page.close()
-
     return individual_book_info
 
 
-def three_highest_ratings(book_list=None):
-    global top_three_rated
-    if book_list is None:
-        book_list = collective_book_list
-
-    sorted_high_low = sorted(book_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
-    top_three_rated = sorted_high_low[:3]                                                                       # To only present the top three rated books to the user.
-
-    return top_three_rated
-
-
 def get_real_amazon_url(purchase_link_locator):
-    try:                                                                                                        # To Catch unsuccessful attempts to get amazon url.
+    """ Takes the URL and follows redirects to find the final URL for the book on Amazon."""
+    try:                                                                                                        # To catch unsuccessful attempts to get amazon url.
         response = requests.get(purchase_link_locator, allow_redirects=True, timeout=5)
         return response.url                                                                                     # To later use to extract the book image url from Amazon and present amazon link to user.
     except Exception as e:
@@ -253,6 +133,7 @@ def get_real_amazon_url(purchase_link_locator):
 
 
 def get_amazon_image_url(purchase_link_locator):
+    """ Builds a direct link to the book cover image using the URL product ID. """
     real_url = get_real_amazon_url(purchase_link_locator)
     if real_url:
         match = re.search(r'/dp/(\w+)', real_url)                                                        # To find and extract the specific ID for the book within the link
@@ -262,15 +143,31 @@ def get_amazon_image_url(purchase_link_locator):
     return None
 
 
+
+# ------------------------ BOOK PROCESSING -----------------------------
+
+def three_highest_ratings(book_list=None):
+    """Sorts the selected books by rating from high to low and retains the top three books only."""
+    global top_three_rated
+    if book_list is None:
+        book_list = collective_book_list
+
+    sorted_high_low = sorted(book_list, key=lambda x: x[1], reverse=True)                         # Sorting to only have to extract the three highest rated books later.
+    top_three_rated = sorted_high_low[:3]                                                                       # To only present the top three rated books to the user.
+    return top_three_rated
+
+
 def save_book_recommendations():
+    """Saves all recommended books information to a list except the img URL."""
     for book in top_three_rated:
         add_to_recommended_books_list = recommended_books_list.append(book[:5])                                 # To track which books have already been recommended.
 
 
-def present_books_to_user():
+def present_books_to_user(user_mood):
+    """Presents the user with the top three rated books and their information and asks if they want to add them to the reading list."""
     print("Here Are Your Happy Book Recommendations!")
     for row in top_three_rated:
-        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N) ")                                    # To ask user if they want to save book title to reading list.
+        save_book = input("Add " + row[0] + " To Your Reading List? (Y/N)")                                    # To ask user if they want to save book title to reading list.
         if save_book.lower() in ["yes", "y"]:
             add_book_to_reading_list(row[:5], user_mood)
         elif save_book.lower() in ["no","n"]:
@@ -281,8 +178,8 @@ def present_books_to_user():
     print(recommended_books_list)
 
 
-def add_book_mood_headings(answer_tree, user_name):
-    # To organize recommended list books if heading not already present
+def add_book_mood_headings(answer_tree, user_mood):
+    """Adds headings to reading and recommended lists if heading not already present."""
     if not any(row[0] == user_mood for row in recommended_book_headings):
         inner_recommended_list = [user_mood]
         recommended_book_headings.append(inner_recommended_list)
@@ -299,42 +196,26 @@ def add_book_mood_headings(answer_tree, user_name):
         for row in reading_list_headings:
             if row[0] == user_mood:
                 row.extend(reading_list)
-
     return reading_list_headings, recommended_book_headings
 
 
-def view_reading_list():
-    open_reading_list = input("View Reading List?")
-    if open_reading_list.lower() == "Yes":
-        print(reading_list)
-    elif open_reading_list.lower() == "No":
-        print(' ')  # Placeholder if user doesn't want to view the list.
-
-
-def view_recommended_list():
-    open_recommended_list = input("View Recommended List?")
-    if open_recommended_list.lower() == "Yes":
-        print(recommended_books_list)
-    elif open_recommended_list.lower() == "No":
-        print(' ')
-
-
 def main():
-    initialize_database()
-    user_mood = mood_quiz()
-
+    """Runs the core logic for the app."""
+    user_mood = mood_quiz(collective_answers, answer_tree)
+    if not os.path.exists("moodbooks.db"):
+        initialize_database()
 
     with (sync_playwright() as p):
-        open_webpage_choose_mood(user_mood,p)                     # To open website, select user's mood, and books based on the mood.
+        open_webpage_choose_mood(user_mood,p)                   # To open website, select user's mood, and books based on the mood.
         scrape_book_info()                                      # To organize book details and present to the user.
         three_highest_ratings()                                 # To only show the user the top three books selected from the website.
         save_book_recommendations()                             # To keep track of all recommended books, so the user is presented with new choices later.
-        present_books_to_user()                                 # To allow the user to view all book details and choose to save to reading list or recommended list.
+        present_books_to_user(user_mood)                                 # To allow the user to view all book details and choose to save to reading list or recommended list.
         add_book_mood_headings(answer_tree, user_mood)          # To organize the books in the reading list and recommended list.
 
 
 if __name__ == "__main__":
-    main_menu()
+    main_menu(answer_tree)
 
 
 
